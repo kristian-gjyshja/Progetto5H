@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <title><?= $title ?? 'SubManager Pro' ?></title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/tailwind-lite.css')) ?>">
   <style>
-    body { font-family: 'Inter', sans-serif; }
     .admin-table th,
     .admin-table td {
       padding: 0.75rem 1rem;

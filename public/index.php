@@ -7,13 +7,7 @@ require_once __DIR__ . '/../app/config.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SubManager Pro - Chi Siamo</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Manrope', sans-serif; }
-  </style>
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/tailwind-lite.css')) ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800">
   <main class="mx-auto max-w-6xl px-6 py-10 md:py-16">

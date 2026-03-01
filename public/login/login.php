@@ -28,7 +28,7 @@ $errorMessage = $errorMessages[$errorKey] ?? null;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - SubManager Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/tailwind-lite.css')) ?>">
   <style>
     body {
       background: linear-gradient(135deg, #6b46c1, #9f7aea, #805ad5);
