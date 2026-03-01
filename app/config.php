@@ -1,8 +1,8 @@
 <?php
 session_start();
 // Configurazione path con .htaccess
-define('BASE_PATH', '/progetto_informatica');
-define('BASE_URL', 'http://localhost/progetto_informatica');
+define('BASE_PATH', '/Progetto5H');
+define('BASE_URL', 'http://localhost/Progetto5H');
 
 // Helper function per creare URL puliti
 function url($path = '') {
