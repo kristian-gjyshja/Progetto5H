@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# IMPORTANTE: Imposta la base corretta per la cartella /public/
+RewriteBase /progettino/public/
+
+# Rimuovi .php dagli URL
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*)$ $1.php [L,QSA]
+
+# Proteggi file sensibili
+<FilesMatch "^(_|\.ht|db\.php|session\.php)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
