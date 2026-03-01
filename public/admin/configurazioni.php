@@ -32,15 +32,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === '
     }
 }
 
+if (isset($_GET['elimina'])) {
+    $id = filter_input(INPUT_GET, 'elimina', FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1],
+    ]);
+
+    if ($id === false || $id === null) {
+        $redirect(['error' => 'id_non_valido']);
+    }
+
+    try {
+        if ($servizioDal->elimina((int) $id)) {
+            $redirect(['success' => 'eliminato']);
+        }
+        $redirect(['error' => 'non_trovato_o_collegato']);
+    } catch (PDOException $e) {
+        $redirect(['error' => 'errore_db']);
+    }
+}
+
 $serviziAttivi = $servizioDal->getAll();
 $serviziNonRinnovati = $servizioDal->getNonRinnovatiUltimoAnno();
 
 $messaggiSuccesso = [
     'aggiunto' => 'Servizio aggiunto correttamente.',
+    'eliminato' => 'Servizio eliminato correttamente.',
 ];
 
 $messaggiErrore = [
     'campi_non_validi' => 'Campi non validi. Controlla i dati inseriti.',
+    'id_non_valido' => 'ID servizio non valido.',
+    'non_trovato_o_collegato' => 'Servizio non trovato oppure collegato ad abbonamenti esistenti.',
     'errore_db' => 'Errore database durante il salvataggio.',
     'salvataggio_fallito' => 'Salvataggio non riuscito.',
 ];
@@ -114,12 +136,13 @@ require_once '../templates/header.php';
             <th>Nome</th>
             <th>Categoria</th>
             <th>Costo</th>
+            <th>Azioni</th>
           </tr>
         </thead>
         <tbody class="divide-y">
           <?php if (empty($serviziAttivi)): ?>
             <tr class="hover:bg-slate-50" data-static-row="true">
-              <td colspan="3">Nessun servizio trovato.</td>
+              <td colspan="4">Nessun servizio trovato.</td>
             </tr>
           <?php else: ?>
             <?php foreach ($serviziAttivi as $s): ?>
@@ -127,10 +150,14 @@ require_once '../templates/header.php';
                 <td><?= htmlspecialchars($s['nome']) ?></td>
                 <td><?= htmlspecialchars($s['categoria'] ?? 'Senza categoria') ?></td>
                 <td><?= number_format((float) $s['costo'], 2, ',', '.') ?> &euro;</td>
+                <td class="actions">
+                  <i class="fa fa-trash" title="Elimina servizio"
+                    onclick="confermaAzione('elimina', <?= (int) $s['id'] ?>)"></i>
+                </td>
               </tr>
             <?php endforeach; ?>
             <tr id="serviziNoResults" class="hidden hover:bg-slate-50" data-static-row="true">
-              <td colspan="3">Nessun risultato per la ricerca.</td>
+              <td colspan="4">Nessun risultato per la ricerca.</td>
             </tr>
           <?php endif; ?>
         </tbody>

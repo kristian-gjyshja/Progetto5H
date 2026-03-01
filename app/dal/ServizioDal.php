@@ -23,6 +23,21 @@ class ServizioDAL {
         return $stmt->rowCount() > 0;
     }
 
+    public function elimina(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM servizi
+            WHERE id = :id
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM abbonamenti a
+                    WHERE a.servizio_id = servizi.id
+              )");
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->rowCount() > 0;
+    }
+
     public function SpesaPercategoriaIntrattenimento(){
         $stmt = $this->pdo->query("SELECT categoria, SUM(s.costo * 12) AS totale
         FROM servizi s JOIN abbonamenti a ON s.id = a.servizio_id
