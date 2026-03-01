@@ -1,0 +1,62 @@
+[
+  {
+    "nome": "Giulia Conti",
+    "email": "giulia.conti@email.it",
+    "password": "giulia2024",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Roberto Fontana",
+    "email": "roberto.fontana@email.it",
+    "password": "roberto123",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Chiara Rizzo",
+    "email": "chiara.rizzo@email.it",
+    "password": "chiara456",
+    "ruolo": "admin"
+  },
+  {
+    "nome": "Davide Moretti",
+    "email": "davide.moretti@email.it",
+    "password": "davide789",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Valentina Barbieri",
+    "email": "valentina.barbieri@email.it",
+    "password": "vale2024",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Simone Fabbri",
+    "email": "simone.fabbri@email.it",
+    "password": "simone999",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Martina Caruso",
+    "email": "martina.caruso@email.it",
+    "password": "martina321",
+    "ruolo": "admin"
+  },
+  {
+    "nome": "Andrea Vitale",
+    "email": "andrea.vitale@email.it",
+    "password": "andrea654",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Federica Santoro",
+    "email": "federica.santoro@email.it",
+    "password": "fede2024",
+    "ruolo": "user"
+  },
+  {
+    "nome": "Lorenzo Galli",
+    "email": "lorenzo.galli@email.it",
+    "password": "lorenzo888",
+    "ruolo": "user"
+  }
+]

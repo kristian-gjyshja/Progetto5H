@@ -1,0 +1,17 @@
+Options -Indexes
+
+# Nascondi file sensibili
+<FilesMatch "^\.(htaccess|htpasswd|ini|log|sh|inc|bak|backup|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Blocca accesso a .git
+RedirectMatch 404 /\.git
+
+# Abilita RewriteEngine
+RewriteEngine On
+
+# IMPORTANTE: Reindirizza TUTTO a /public/, tranne se già ci sei
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L,QSA]
