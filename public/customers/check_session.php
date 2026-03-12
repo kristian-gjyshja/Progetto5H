@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/config.php';
-include __DIR__ . '/../../app/dal/db.php';
+require_once __DIR__ . '/../../app/dal/db.php';
 
 $allowed_roles = ['admin', 'user'];
 

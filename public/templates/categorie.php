@@ -5,7 +5,7 @@
     <div class="flex justify-between">
       <span class="text-slate-600">Totale ricorrente</span>
       <span class="font-medium text-indigo-600">
-        &euro;<?= number_format((float)$spesa_totale_ricorrente, 2, ',', '.')?> 
+        &euro;<?= number_format((float) $spesa_totale_ricorrente, 2, ',', '.') ?>
       </span>
     </div>
 
@@ -16,7 +16,7 @@
         <div class="flex justify-between">
           <span class="text-slate-600"><?= htmlspecialchars($row['categoria']) ?></span>
           <span class="font-medium text-indigo-600">
-            &euro;<?= number_format((float)$row['totale'], 2, ',', '.') ?> / mese
+            &euro;<?= number_format((float) $row['totale'], 2, ',', '.') ?> / mese
           </span>
         </div>
       <?php endforeach; ?>

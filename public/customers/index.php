@@ -7,6 +7,24 @@ require_once '../templates/header.php';
 $abbonamentiDal = new AbbonamentoDal($pdo);
 $abbonamenti = $abbonamentiDal->getByUtente((int) $_SESSION['id']);
 
+$parseDate = function (string $value): ?DateTimeImmutable {
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+
+    $data = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+    if ($data !== false) {
+        return $data;
+    }
+
+    try {
+        return new DateTimeImmutable($value);
+    } catch (Exception $e) {
+        return null;
+    }
+};
+
 $attivi = 0;
 $inScadenza = 0;
 $spesaMensile = 0.0;
@@ -22,19 +40,14 @@ foreach ($abbonamenti as $abbonamento) {
     }
 
     $attivi++;
-    $spesaMensile += (float) ($abbonamento['costo'] ?? 0);
-    $categoria = trim((string) ($abbonamento['categoria'] ?? ''));
-    if ($categoria === '') {
-        $categoria = 'Senza categoria';
-    }
-    $spesaPerCategoriaMap[$categoria] = ($spesaPerCategoriaMap[$categoria] ?? 0) + (float) ($abbonamento['costo'] ?? 0);
+    $costo = (float) ($abbonamento['costo'] ?? 0);
+    $spesaMensile += $costo;
 
-    $dataFine = DateTimeImmutable::createFromFormat('Y-m-d', (string) $abbonamento['data_fine']);
-    if ($dataFine === false) {
-        $dataFine = new DateTimeImmutable((string) $abbonamento['data_fine']);
-    }
+    $categoria = trim((string) ($abbonamento['categoria'] ?? '')) ?: 'Senza categoria';
+    $spesaPerCategoriaMap[$categoria] = ($spesaPerCategoriaMap[$categoria] ?? 0) + $costo;
 
-    if ($dataFine >= $oggi && $dataFine <= $limiteScadenza) {
+    $dataFine = $parseDate((string) ($abbonamento['data_fine'] ?? ''));
+    if ($dataFine !== null && $dataFine >= $oggi && $dataFine <= $limiteScadenza) {
         $inScadenza++;
         $notifiche[] = [
             'nome' => (string) ($abbonamento['servizio'] ?? 'Servizio'),

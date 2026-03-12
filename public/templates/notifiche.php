@@ -1,4 +1,4 @@
- <div class="bg-white rounded-xl shadow p-6">
+<div class="bg-white rounded-xl shadow p-6">
   <h2 class="font-semibold mb-4 flex items-center gap-2">
     <i class="fa-regular fa-bell text-amber-500" aria-hidden="true"></i>
     Notifiche Scadenze Imminenti

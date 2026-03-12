@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/config.php';
-include __DIR__ . '/../../app/dal/db.php';
+require_once __DIR__ . '/../../app/dal/db.php';
 
 $allowed_roles = ['admin', 'user'];
 
@@ -9,7 +9,7 @@ if (!isset($_SESSION['email'], $_SESSION['ruolo'])) {
     exit();
 }
 
-if (!in_array($_SESSION['ruolo'], $allowed_roles)) {
+if (!in_array($_SESSION['ruolo'], $allowed_roles, true)) {
     http_response_code(401);
     exit('Unauthorized');
 }

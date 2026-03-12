@@ -2,9 +2,10 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title><?= $title ?? 'SubManager Pro' ?></title>
+  <title><?= htmlspecialchars($title ?? 'SubManager Pro') ?></title>
 
   <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/tailwind-lite.css')) ?>">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     .admin-table th,
     .admin-table td {

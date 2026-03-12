@@ -4,14 +4,14 @@ require_once '../../app/dal/AbbonamentoDal.php';
 $title = 'Dashboard Admin';
 require_once '../templates/header.php';
 
-$abbonamenti  = new AbbonamentoDal($pdo);
-$tot = count($abbonamenti->getAll());
-$scad = count($abbonamenti->inScadenza());
-$spesa_mensile = $abbonamenti->spesaMensile();
-$spesa_annuale = $abbonamenti->spesaAnnuale();
-$spesa_totale_ricorrente = $abbonamenti->spesaTotaleRicorrente();
-$spesa_per_categoria = $abbonamenti->spesaRicorrentePerCategoria();
-$notifiche = $abbonamenti->inScadenza();
+$abbonamentiDal  = new AbbonamentoDal($pdo);
+$notifiche = $abbonamentiDal->inScadenza();
+$tot = count($abbonamentiDal->getAll());
+$scad = count($notifiche);
+$spesa_mensile = $abbonamentiDal->spesaMensile();
+$spesa_annuale = $abbonamentiDal->spesaAnnuale();
+$spesa_totale_ricorrente = $abbonamentiDal->spesaTotaleRicorrente();
+$spesa_per_categoria = $abbonamentiDal->spesaRicorrentePerCategoria();
 ?>
 
 

@@ -9,6 +9,7 @@ $nomeSessione = trim((string) ($_SESSION['nome'] ?? ''));
 $iniziale = $nomeSessione !== ''
     ? strtoupper(substr($nomeSessione, 0, 1))
     : 'A';
+$numeroNotifiche = is_array($notifiche ?? null) ? count($notifiche) : 0;
 ?>
 
 <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
@@ -23,27 +24,25 @@ $iniziale = $nomeSessione !== ''
     </a>
 
     <h1 class="text-xl font-semibold text-slate-800">
-      <?= $title ?? 'Dashboard' ?>
+      <?= htmlspecialchars($title ?? 'Dashboard') ?>
     </h1>
   </div>
 
   <div class="flex items-center gap-4">
-    <!-- Notifiche -->
     <div class="relative cursor-pointer">
-      🔔
-      <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
-        4
-      </span>
+      <i class="fa-regular fa-bell text-slate-600" aria-hidden="true"></i>
+      <?php if ($numeroNotifiche > 0): ?>
+        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
+          <?= (int) $numeroNotifiche ?>
+        </span>
+      <?php endif; ?>
     </div>
 
-    <!-- User -->
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
         <?= htmlspecialchars($iniziale) ?>
       </div>
-      <select class="border rounded px-2 py-1 text-sm">
-        <option><?= htmlspecialchars($ruoloLabel) ?></option>
-      </select>
+      <span class="text-sm font-medium text-slate-600"><?= htmlspecialchars($ruoloLabel) ?></span>
     </div>
     <a href="../login/logout.php" class="text-red-500">Logout</a>
   </div>

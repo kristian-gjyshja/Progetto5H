@@ -1,19 +1,19 @@
 <?php
 require_once 'db.php';
 
-class UtenteDAL {
-
+class UtenteDAL
+{
     private $pdo;
 
-    public function __construct($pdo) {
+    public function __construct($pdo)
+    {
         $this->pdo = $pdo;
     }
-    
-
-
-    public function getAll() {
+ 
+    public function getAll()
+    {
         $stmt = $this->pdo->query("SELECT u.id, u.nome, u.email, u.ruolo,
-            SUM(CASE WHEN a.attivo = 1 AND a.archiviato = 0 THEN 1 ELSE 0 END) AS abbonamenti_attivi
+            COALESCE(SUM(a.attivo = 1 AND a.archiviato = 0), 0) AS abbonamenti_attivi
             FROM utenti u
             LEFT JOIN abbonamenti a ON a.utente_id = u.id
             GROUP BY u.id, u.nome, u.email, u.ruolo

@@ -1,12 +1,16 @@
 <?php
 
-class ServizioDAL {
+class ServizioDAL
+{
     private $pdo;
-    public function __construct($pdo) {
+
+    public function __construct($pdo)
+    {
         $this->pdo = $pdo;
     }
     
-    public function getAll() {
+    public function getAll()
+    {
         $stmt = $this->pdo->query("SELECT * FROM servizi");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -36,14 +40,6 @@ class ServizioDAL {
         $stmt->execute();
 
         return $stmt->rowCount() > 0;
-    }
-
-    public function SpesaPercategoriaIntrattenimento(){
-        $stmt = $this->pdo->query("SELECT categoria, SUM(s.costo * 12) AS totale
-        FROM servizi s JOIN abbonamenti a ON s.id = a.servizio_id
-        WHERE s.categoria = 'intrattenimento' AND a.attivo = 1 AND a.archiaviato = 0
-        GROUP BY categoria;");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getNonRinnovatiUltimoAnno()
