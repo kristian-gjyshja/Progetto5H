@@ -4,9 +4,15 @@ require_once '../../app/dal/UtenteDal.php';
 $title = 'Gestione Utenti';
 
 $utenteDal = new UtenteDAL($pdo);
+$ricerca = trim((string) ($_GET['q'] ?? $_POST['q'] ?? ''));
+$queryBase = [];
+if ($ricerca !== '') {
+    $queryBase['q'] = $ricerca;
+}
 
-$redirect = function (array $params = []): void {
-    $query = $params ? ('?' . http_build_query($params)) : '';
+$redirect = function (array $params = []) use ($queryBase): void {
+    $query = http_build_query(array_merge($queryBase, $params));
+    $query = $query !== '' ? ('?' . $query) : '';
     header('Location: ' . url('public/admin/utenti.php') . $query);
     exit();
 };
@@ -16,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === '
     $email = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $ruoloInput = strtolower(trim((string) ($_POST['ruolo'] ?? 'user')));
-    $ruolo = in_array($ruoloInput, ['admin', 'user'], true) ? $ruoloInput : 'user';
+    $ruolo = $ruoloInput === 'admin' ? 'admin' : 'user';
 
     if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 6) {
         $redirect(['error' => 'campi_non_validi']);
@@ -56,6 +62,19 @@ if (isset($_GET['elimina'])) {
 }
 
 $utenti = $utenteDal->getAll();
+if ($ricerca !== '') {
+    $needle = $ricerca;
+    $utenti = array_values(array_filter($utenti, function (array $u) use ($needle): bool {
+        $haystack = implode(' ', [
+            $u['id'] ?? '',
+            $u['nome'] ?? '',
+            $u['email'] ?? '',
+            $u['ruolo'] ?? '',
+            $u['abbonamenti_attivi'] ?? '',
+        ]);
+        return $haystack !== '' && stripos($haystack, $needle) !== false;
+    }));
+}
 
 $messaggiSuccesso = [
     'aggiunto' => 'Utente aggiunto correttamente.',
@@ -73,11 +92,14 @@ $messaggiErrore = [
 $messaggioASchermo = null;
 $tipoMessaggioASchermo = null;
 
-if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
-    $messaggioASchermo = $messaggiSuccesso[$_GET['success']];
+$successKey = $_GET['success'] ?? '';
+$errorKey = $_GET['error'] ?? '';
+
+if ($successKey !== '' && isset($messaggiSuccesso[$successKey])) {
+    $messaggioASchermo = $messaggiSuccesso[$successKey];
     $tipoMessaggioASchermo = 'success';
-} elseif (isset($_GET['error']) && isset($messaggiErrore[$_GET['error']])) {
-    $messaggioASchermo = $messaggiErrore[$_GET['error']];
+} elseif ($errorKey !== '' && isset($messaggiErrore[$errorKey])) {
+    $messaggioASchermo = $messaggiErrore[$errorKey];
     $tipoMessaggioASchermo = 'error';
 }
 ?>
@@ -117,14 +139,23 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
         </form>
       </details>
 
-      <input
-        id="utentiSearch"
-        data-table-search="utentiTable"
-        data-no-results="utentiNoResults"
-        type="text"
-        class="border rounded px-3 py-2 mb-4 w-full md:w-1/3"
-        placeholder="Cerca utente..."
-      >
+      <form method="get" class="mb-4 flex flex-wrap gap-2 items-center">
+        <input
+          type="text"
+          name="q"
+          value="<?= htmlspecialchars($ricerca) ?>"
+          class="border rounded px-3 py-2 w-full md:w-1/3"
+          placeholder="Cerca utente..."
+        >
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">
+          Cerca
+        </button>
+        <?php if ($ricerca !== ''): ?>
+          <a href="<?= htmlspecialchars(url('public/admin/utenti.php')) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+            Reset
+          </a>
+        <?php endif; ?>
+      </form>
 
       <div class="rounded-xl border border-slate-200 overflow-hidden">
         <table id="utentiTable" class="w-full text-sm text-center admin-table">
@@ -163,9 +194,6 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
                 </td>
               </tr>
             <?php endforeach; ?>
-            <tr id="utentiNoResults" class="hidden hover:bg-slate-50" data-static-row="true">
-              <td colspan="5">Nessun risultato per la ricerca.</td>
-            </tr>
           <?php endif; ?>
         </tbody>
         </table>
