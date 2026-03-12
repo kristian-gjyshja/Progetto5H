@@ -4,9 +4,15 @@ require_once '../../app/dal/ServizioDal.php';
 $title = 'Configurazioni Servizi';
 
 $servizioDal = new ServizioDAL($pdo);
+$ricerca = trim((string) ($_GET['q'] ?? $_POST['q'] ?? ''));
+$queryBase = [];
+if ($ricerca !== '') {
+    $queryBase['q'] = $ricerca;
+}
 
-$redirect = function (array $params = []): void {
-    $query = $params ? ('?' . http_build_query($params)) : '';
+$redirect = function (array $params = []) use ($queryBase): void {
+    $query = http_build_query(array_merge($queryBase, $params));
+    $query = $query !== '' ? ('?' . $query) : '';
     header('Location: ' . url('public/admin/configurazioni.php') . $query);
     exit();
 };
@@ -52,6 +58,19 @@ if (isset($_GET['elimina'])) {
 }
 
 $serviziAttivi = $servizioDal->getAll();
+$serviziAttivi = $serviziAttivi ?? [];
+if ($ricerca !== '') {
+    $needle = $ricerca;
+    $serviziAttivi = array_values(array_filter($serviziAttivi, function (array $s) use ($needle): bool {
+        $haystack = implode(' ', [
+            $s['id'] ?? '',
+            $s['nome'] ?? '',
+            $s['categoria'] ?? '',
+            $s['costo'] ?? '',
+        ]);
+        return $haystack !== '' && stripos($haystack, $needle) !== false;
+    }));
+}
 $serviziNonRinnovati = $servizioDal->getNonRinnovatiUltimoAnno();
 
 $messaggiSuccesso = [
@@ -70,11 +89,14 @@ $messaggiErrore = [
 $messaggioASchermo = null;
 $tipoMessaggioASchermo = null;
 
-if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
-    $messaggioASchermo = $messaggiSuccesso[$_GET['success']];
+$successKey = $_GET['success'] ?? '';
+$errorKey = $_GET['error'] ?? '';
+
+if ($successKey !== '' && isset($messaggiSuccesso[$successKey])) {
+    $messaggioASchermo = $messaggiSuccesso[$successKey];
     $tipoMessaggioASchermo = 'success';
-} elseif (isset($_GET['error']) && isset($messaggiErrore[$_GET['error']])) {
-    $messaggioASchermo = $messaggiErrore[$_GET['error']];
+} elseif ($errorKey !== '' && isset($messaggiErrore[$errorKey])) {
+    $messaggioASchermo = $messaggiErrore[$errorKey];
     $tipoMessaggioASchermo = 'error';
 }
 
@@ -120,14 +142,23 @@ require_once '../templates/header.php';
 
       <h2 class="text-lg font-semibold text-slate-800 mb-3">Catalogo servizi</h2>
 
-      <input
-        id="serviziSearch"
-        data-table-search="serviziTable"
-        data-no-results="serviziNoResults"
-        type="text"
-        class="border rounded px-3 py-2 mb-4 w-full md:w-1/3"
-        placeholder="Cerca servizio..."
-      >
+      <form method="get" class="mb-4 flex flex-wrap gap-2 items-center">
+        <input
+          type="text"
+          name="q"
+          value="<?= htmlspecialchars($ricerca) ?>"
+          class="border rounded px-3 py-2 w-full md:w-1/3"
+          placeholder="Cerca servizio..."
+        >
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">
+          Cerca
+        </button>
+        <?php if ($ricerca !== ''): ?>
+          <a href="<?= htmlspecialchars(url('public/admin/configurazioni.php')) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+            Reset
+          </a>
+        <?php endif; ?>
+      </form>
 
       <div class="rounded-xl border border-slate-200 overflow-hidden">
         <table id="serviziTable" class="w-full text-sm text-center admin-table">
@@ -156,9 +187,6 @@ require_once '../templates/header.php';
                 </td>
               </tr>
             <?php endforeach; ?>
-            <tr id="serviziNoResults" class="hidden hover:bg-slate-50" data-static-row="true">
-              <td colspan="4">Nessun risultato per la ricerca.</td>
-            </tr>
           <?php endif; ?>
         </tbody>
         </table>
