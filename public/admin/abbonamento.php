@@ -27,7 +27,7 @@ if ($ricerca !== '') {
 
 $redirectConFiltro = function (array $params = []) use ($queryBase): void {
     $query = http_build_query(array_merge($queryBase, $params));
-    header('Location: ' . url('public/admin/abbonamento.php') . '?' . $query);
+    header('Location: public/admin/abbonamento.php' . '?' . $query);
     exit();
 };
 
@@ -266,7 +266,7 @@ if ($successKey !== '' && isset($messaggiSuccesso[$successKey])) {
           Cerca
         </button>
         <?php if ($ricerca !== ''): ?>
-          <a href="<?= htmlspecialchars(url('public/admin/abbonamento.php') . '?filtro=' . urlencode($filtro)) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+          <a href="public/admin/abbonamento.php') . '?filtro=' . urlencode($filtro)) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
             Reset
           </a>
         <?php endif; ?>

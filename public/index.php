@@ -7,7 +7,7 @@ require_once __DIR__ . '/../app/config.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SubManager Pro - Chi Siamo</title>
-  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/landing.css')) ?>">
+  <link rel="stylesheet" href="assets/css/landing.css">
 </head>
 <body class="landing-body">
   <main class="landing-main">
@@ -43,7 +43,7 @@ require_once __DIR__ . '/../app/config.php';
 
       <div class="intro-cta">
         <a
-          href="<?= htmlspecialchars(url('public/login/logout.php')) ?>"
+          href="login/login.php"
           class="btn-primary"
         >
           Vai al login
