@@ -19,11 +19,39 @@ $frequenzeDisponibili = [
 
 $filtroInput = $_GET['filtro'] ?? $_POST['filtro'] ?? 'attivi';
 $filtro = array_key_exists($filtroInput, $filtriDisponibili) ? $filtroInput : 'attivi';
+$ricerca = trim((string) ($_GET['q'] ?? $_POST['q'] ?? ''));
+$queryBase = ['filtro' => $filtro];
+if ($ricerca !== '') {
+    $queryBase['q'] = $ricerca;
+}
 
-$redirectConFiltro = function (array $params = []) use ($filtro): void {
-    $query = http_build_query(array_merge(['filtro' => $filtro], $params));
+$redirectConFiltro = function (array $params = []) use ($queryBase): void {
+    $query = http_build_query(array_merge($queryBase, $params));
     header('Location: ' . url('public/admin/abbonamento.php') . '?' . $query);
     exit();
+};
+
+$isValidDate = function (string $value): bool {
+    $data = DateTime::createFromFormat('Y-m-d', $value);
+    return $data !== false && $data->format('Y-m-d') === $value;
+};
+
+$parseDate = function (string $value): ?DateTimeImmutable {
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+
+    $data = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+    if ($data !== false) {
+        return $data;
+    }
+
+    try {
+        return new DateTimeImmutable($value);
+    } catch (Exception $e) {
+        return null;
+    }
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === 'aggiungi_abbonamento') {
@@ -32,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === '
     $dataFine = trim((string) ($_POST['data_fine'] ?? ''));
     $frequenza = strtolower(trim((string) ($_POST['frequenza'] ?? 'mensile')));
 
-    $dataValida = DateTime::createFromFormat('Y-m-d', $dataFine) !== false;
+    $dataValida = $isValidDate($dataFine);
     $frequenzaValida = array_key_exists($frequenza, $frequenzeDisponibili);
 
     if ($utenteId === false || $utenteId === null || $servizioId === false || $servizioId === null || !$dataValida || !$frequenzaValida) {
@@ -54,8 +82,7 @@ if (isset($_GET['riattiva'])) {
         'options' => ['min_range' => 1],
     ]);
     $riattivaDataFine = trim((string) ($_GET['riattiva_data'] ?? ''));
-    $riattivaData = DateTime::createFromFormat('Y-m-d', $riattivaDataFine);
-    $riattivaDataValida = $riattivaData !== false && $riattivaData->format('Y-m-d') === $riattivaDataFine;
+    $riattivaDataValida = $isValidDate($riattivaDataFine);
 
     if ($id === false || $id === null) {
         $redirectConFiltro(['error' => 'id_non_valido']);
@@ -101,6 +128,18 @@ foreach ($azioni as $param => $config) {
 }
 
 $abbonamenti = $abbonamentiDal->getForAdmin($filtro);
+if ($ricerca !== '') {
+    $needle = $ricerca;
+    $abbonamenti = array_values(array_filter($abbonamenti, function (array $a) use ($needle): bool {
+        $haystack = implode(' ', [
+            $a['id'] ?? '',
+            $a['nomeutente'] ?? '',
+            $a['nomeservizio'] ?? '',
+            $a['data_fine'] ?? '',
+        ]);
+        return $haystack !== '' && stripos($haystack, $needle) !== false;
+    }));
+}
 $utentiPerSelect = $abbonamentiDal->getUtentiPerSelect();
 $serviziPerSelect = $abbonamentiDal->getServiziPerSelect();
 
@@ -129,11 +168,14 @@ $messaggiErrore = [
 $messaggioASchermo = null;
 $tipoMessaggioASchermo = null;
 
-if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
-    $messaggioASchermo = $messaggiSuccesso[$_GET['success']];
+$successKey = $_GET['success'] ?? '';
+$errorKey = $_GET['error'] ?? '';
+
+if ($successKey !== '' && isset($messaggiSuccesso[$successKey])) {
+    $messaggioASchermo = $messaggiSuccesso[$successKey];
     $tipoMessaggioASchermo = 'success';
-} elseif (isset($_GET['error']) && isset($messaggiErrore[$_GET['error']])) {
-    $messaggioASchermo = $messaggiErrore[$_GET['error']];
+} elseif ($errorKey !== '' && isset($messaggiErrore[$errorKey])) {
+    $messaggioASchermo = $messaggiErrore[$errorKey];
     $tipoMessaggioASchermo = 'error';
 }
 ?>
@@ -201,6 +243,9 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
               ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm'
               : 'px-3 py-2 rounded border text-slate-700 text-sm hover:bg-slate-100';
           $link = url('public/admin/abbonamento.php') . '?filtro=' . urlencode($chiave);
+          if ($ricerca !== '') {
+              $link .= '&q=' . urlencode($ricerca);
+          }
           ?>
           <a href="<?= htmlspecialchars($link) ?>" class="<?= $classi ?>">
             <?= htmlspecialchars($label) ?>
@@ -208,14 +253,24 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
         <?php endforeach; ?>
       </div>
 
-      <input
-        id="abbonamentiSearch"
-        data-table-search="abbonamentiTable"
-        data-no-results="abbonamentiNoResults"
-        type="text"
-        class="border rounded px-3 py-2 mb-4 w-full md:w-1/3"
-        placeholder="Cerca abbonamento..."
-      >
+      <form method="get" class="mb-4 flex flex-wrap gap-2 items-center">
+        <input type="hidden" name="filtro" value="<?= htmlspecialchars($filtro) ?>">
+        <input
+          type="text"
+          name="q"
+          value="<?= htmlspecialchars($ricerca) ?>"
+          class="border rounded px-3 py-2 w-full md:w-1/3"
+          placeholder="Cerca abbonamento..."
+        >
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">
+          Cerca
+        </button>
+        <?php if ($ricerca !== ''): ?>
+          <a href="<?= htmlspecialchars(url('public/admin/abbonamento.php') . '?filtro=' . urlencode($filtro)) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+            Reset
+          </a>
+        <?php endif; ?>
+      </form>
 
       <div class="rounded-xl border border-slate-200 overflow-hidden">
         <table id="abbonamentiTable" class="w-full text-sm text-center admin-table">
@@ -234,12 +289,9 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
               <td colspan="5">Nessun abbonamento trovato per il filtro selezionato.</td>
             </tr>
           <?php else: ?>
+            <?php $oggi = new DateTimeImmutable('today'); ?>
             <?php foreach ($abbonamenti as $a):
-              $oggi = new DateTimeImmutable('today');
-              $fine = DateTimeImmutable::createFromFormat('Y-m-d', (string) $a['data_fine']);
-              if ($fine === false) {
-                  $fine = new DateTimeImmutable((string) $a['data_fine']);
-              }
+              $fine = $parseDate((string) ($a['data_fine'] ?? '')) ?? $oggi;
               $giorniAllaScadenza = (int) $oggi->diff($fine)->format('%r%a');
               $isScaduto = $fine < $oggi;
               $isArchiviato = (int) $a['archiviato'] === 1;
@@ -294,9 +346,6 @@ if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
                 </td>
               </tr>
             <?php endforeach; ?>
-            <tr id="abbonamentiNoResults" class="hidden hover:bg-slate-50" data-static-row="true">
-              <td colspan="5">Nessun risultato per la ricerca.</td>
-            </tr>
           <?php endif; ?>
         </tbody>
         </table>
