@@ -62,6 +62,15 @@ class AbbonamentoDal
         return in_array($colonna, $this->getColonneAbbonamenti(), true);
     }
 
+    private function getSelectFrequenza(): string
+    {
+        if ($this->hasColonnaAbbonamenti('frequenza')) {
+            return "COALESCE(NULLIF(TRIM(LOWER(a.frequenza)), ''), 'mensile') AS frequenza";
+        }
+
+        return "'mensile' AS frequenza";
+    }
+
     public function getAll() {
         $stmt = $this->pdo->query("SELECT s.nome AS nomeservizio, u.nome AS nomeutente, a.data_fine,a.attivo,a.id FROM abbonamenti a JOIN servizi s ON a.servizio_id = s.id JOIN utenti u ON a.utente_id = u.id WHERE a.attivo = 1 AND a.archiviato = 0");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -113,11 +122,7 @@ class AbbonamentoDal
         );
 
         $stmt = $this->pdo->prepare($sql);
-        foreach ($parametri as $nome => $valore) {
-            $tipo = is_int($valore) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($nome, $valore, $tipo);
-        }
-        $stmt->execute();
+        $stmt->execute($parametri);
 
         return $stmt->rowCount() > 0;
     }
@@ -161,7 +166,7 @@ class AbbonamentoDal
         WHERE a.attivo = 1
         AND a.archiviato = 0
         AND a.data_fine BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND LOWER(TRIM(CASE WHEN s.$colonnaFrequenza IS NULL THEN '' ELSE s.$colonnaFrequenza END)) = 'annuale'
+        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'
         ORDER BY a.data_fine ASC, a.id DESC";
 
         $stmt = $this->pdo->query($sql);
@@ -170,14 +175,12 @@ class AbbonamentoDal
 
     public function getByUtente(int $utenteId)
     {
-        $selectFrequenza = $this->hasColonnaAbbonamenti('frequenza')
-            ? "CASE WHEN a.frequenza IS NULL OR TRIM(a.frequenza) = '' THEN 'mensile' ELSE LOWER(TRIM(a.frequenza)) END AS frequenza"
-            : "'mensile' AS frequenza";
+        $selectFrequenza = $this->getSelectFrequenza();
 
         $sql = "SELECT a.id, a.attivo, a.data_fine,
-        CASE WHEN s.nome IS NULL OR TRIM(s.nome) = '' THEN 'Servizio non disponibile' ELSE s.nome END AS servizio,
-        CASE WHEN s.costo IS NULL THEN 0 ELSE s.costo END AS costo,
-        CASE WHEN s.categoria IS NULL OR TRIM(s.categoria) = '' THEN 'Senza categoria' ELSE s.categoria END AS categoria,
+        s.nome AS servizio,
+        s.costo AS costo,
+        s.categoria AS categoria,
         $selectFrequenza
         FROM abbonamenti a
         LEFT JOIN servizi s ON a.servizio_id = s.id
@@ -199,14 +202,12 @@ class AbbonamentoDal
             return [];
         }
 
-        $selectFrequenza = $this->hasColonnaAbbonamenti('frequenza')
-            ? "CASE WHEN a.frequenza IS NULL OR TRIM(a.frequenza) = '' THEN 'mensile' ELSE LOWER(TRIM(a.frequenza)) END AS frequenza"
-            : "'mensile' AS frequenza";
+        $selectFrequenza = $this->getSelectFrequenza();
 
         $sql = "SELECT a.id, a.attivo, a.data_fine,
-        CASE WHEN s.nome IS NULL OR TRIM(s.nome) = '' THEN 'Servizio non disponibile' ELSE s.nome END AS servizio,
-        CASE WHEN s.costo IS NULL THEN 0 ELSE s.costo END AS costo,
-        CASE WHEN s.categoria IS NULL OR TRIM(s.categoria) = '' THEN 'Senza categoria' ELSE s.categoria END AS categoria,
+        s.nome AS servizio,
+        s.costo AS costo,
+        s.categoria AS categoria,
         $selectFrequenza
         FROM abbonamenti a
         LEFT JOIN servizi s ON a.servizio_id = s.id
@@ -214,7 +215,7 @@ class AbbonamentoDal
         AND a.archiviato = 0
         AND a.attivo = 1
         AND a.data_fine BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND LOWER(TRIM(CASE WHEN s.$colonnaFrequenza IS NULL THEN '' ELSE s.$colonnaFrequenza END)) = 'annuale'
+        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'
         ORDER BY a.data_fine ASC";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':utente_id', $utenteId, PDO::PARAM_INT);
@@ -251,7 +252,7 @@ class AbbonamentoDal
         JOIN servizi s ON a.servizio_id = s.id
         WHERE a.attivo = 1
         AND a.archiviato = 0
-        AND LOWER(TRIM(CASE WHEN s.$colonnaFrequenza IS NULL THEN '' ELSE s.$colonnaFrequenza END)) = 'mensile'");
+        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'mensile'");
         return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
     }
 
@@ -263,18 +264,20 @@ class AbbonamentoDal
             return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
         }
 
-        $stmt = $this->pdo->query("SELECT SUM(
-            CASE
-                WHEN LOWER(TRIM(CASE WHEN s.$colonnaFrequenza IS NULL THEN '' ELSE s.$colonnaFrequenza END)) = 'mensile' THEN s.costo * 12
-                WHEN LOWER(TRIM(CASE WHEN s.$colonnaFrequenza IS NULL THEN '' ELSE s.$colonnaFrequenza END)) = 'annuale' THEN s.costo
-                ELSE 0
-            END
-        ) AS totale
-        FROM abbonamenti a
-        JOIN servizi s ON a.servizio_id = s.id
-        WHERE a.attivo = 1
-        AND a.archiviato = 0");
-        return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
+        $sqlBase = "FROM abbonamenti a
+            JOIN servizi s ON a.servizio_id = s.id
+            WHERE a.attivo = 1
+            AND a.archiviato = 0";
+
+        $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
+            AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'mensile'");
+        $totMensile = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
+
+        $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
+            AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'");
+        $totAnnuale = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
+
+        return ($totMensile * 12) + $totAnnuale;
     }
 
     public function spesaTotaleRicorrente()
@@ -286,23 +289,13 @@ class AbbonamentoDal
     public function spesaRicorrentePerCategoria()
     {
         $stmt = $this->pdo->query("SELECT
-            CASE
-                WHEN s.categoria IS NULL OR TRIM(s.categoria) = '' THEN 'Senza categoria'
-                ELSE s.categoria
-            END AS categoria,
-            CASE
-                WHEN SUM(s.costo) IS NULL THEN 0
-                ELSE SUM(s.costo)
-            END AS totale
+            COALESCE(NULLIF(TRIM(s.categoria), ''), 'Senza categoria') AS categoria,
+            COALESCE(SUM(COALESCE(s.costo, 0)), 0) AS totale
             FROM abbonamenti a
             JOIN servizi s ON a.servizio_id = s.id
             WHERE a.attivo = 1
               AND a.archiviato = 0
-            GROUP BY
-            CASE
-                WHEN s.categoria IS NULL OR TRIM(s.categoria) = '' THEN 'Senza categoria'
-                ELSE s.categoria
-            END
+            GROUP BY COALESCE(NULLIF(TRIM(s.categoria), ''), 'Senza categoria')
             ORDER BY totale DESC, categoria ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -414,22 +407,4 @@ class AbbonamentoDal
 
         return $stmt->rowCount() > 0;
     }
-
-    public function Mettiinpausa(int $id)
-    {
-        return $this->disattiva($id);
-    }
-
-    public function ScadenzaProxMese()
-    {
-        $stmt = $this->pdo->query("SELECT s.nome, s.categoria, a.data_fine, s.costo
-        FROM abbonamenti a
-        JOIN servizi s ON a.servizio_id = s.id
-        WHERE a.data_fine BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 1 MONTH)
-        AND a.attivo = 1
-        AND a.archiviato = 0;");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    
 }
