@@ -15,19 +15,46 @@ $filtriDisponibili = [
 
 $filtroInput = $_GET['filtro'] ?? $_POST['filtro'] ?? 'attivi';
 $filtro = array_key_exists($filtroInput, $filtriDisponibili) ? $filtroInput : 'attivi';
+$ricerca = trim((string) ($_GET['q'] ?? $_POST['q'] ?? ''));
+$queryBase = ['filtro' => $filtro];
+if ($ricerca !== '') {
+    $queryBase['q'] = $ricerca;
+}
 
-$redirectConFiltro = function (array $params = []) use ($filtro): void {
-    $query = http_build_query(array_merge(['filtro' => $filtro], $params));
+$redirectConFiltro = function (array $params = []) use ($queryBase): void {
+    $query = http_build_query(array_merge($queryBase, $params));
     header('Location: ' . url('public/customers/abbonamenti.php') . '?' . $query);
     exit();
+};
+
+$isValidDate = function (string $value): bool {
+    $data = DateTime::createFromFormat('Y-m-d', $value);
+    return $data !== false && $data->format('Y-m-d') === $value;
+};
+
+$parseDate = function (string $value): ?DateTimeImmutable {
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+
+    $data = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+    if ($data !== false) {
+        return $data;
+    }
+
+    try {
+        return new DateTimeImmutable($value);
+    } catch (Exception $e) {
+        return null;
+    }
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === 'aggiungi_abbonamento') {
     $servizioId = filter_input(INPUT_POST, 'servizio_id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
     $dataFine = trim((string) ($_POST['data_fine'] ?? ''));
 
-    $data = DateTime::createFromFormat('Y-m-d', $dataFine);
-    $dataValida = $data !== false && $data->format('Y-m-d') === $dataFine;
+    $dataValida = $isValidDate($dataFine);
 
     if ($servizioId === false || $servizioId === null || !$dataValida) {
         $redirectConFiltro(['error' => 'campi_non_validi']);
@@ -64,8 +91,7 @@ if (isset($_GET['riattiva'])) {
         'options' => ['min_range' => 1],
     ]);
     $riattivaDataFine = trim((string) ($_GET['riattiva_data'] ?? ''));
-    $riattivaData = DateTime::createFromFormat('Y-m-d', $riattivaDataFine);
-    $riattivaDataValida = $riattivaData !== false && $riattivaData->format('Y-m-d') === $riattivaDataFine;
+    $riattivaDataValida = $isValidDate($riattivaDataFine);
 
     if ($id === false || $id === null) {
         $redirectConFiltro(['error' => 'id_non_valido']);
@@ -117,6 +143,20 @@ if ($filtro === 'scadenza_annuale') {
         return true;
     }));
 }
+if ($ricerca !== '') {
+    $needle = $ricerca;
+    $abbonamentiFiltrati = array_values(array_filter($abbonamentiFiltrati, function (array $a) use ($needle): bool {
+        $haystack = implode(' ', [
+            $a['id'] ?? '',
+            $a['servizio'] ?? '',
+            $a['categoria'] ?? '',
+            $a['data_fine'] ?? '',
+            $a['frequenza'] ?? '',
+            $a['costo'] ?? '',
+        ]);
+        return $haystack !== '' && stripos($haystack, $needle) !== false;
+    }));
+}
 
 $messaggiSuccesso = [
     'aggiunto' => 'Abbonamento aggiunto correttamente.',
@@ -139,11 +179,14 @@ $messaggiErrore = [
 $messaggioASchermo = null;
 $tipoMessaggioASchermo = null;
 
-if (isset($_GET['success']) && isset($messaggiSuccesso[$_GET['success']])) {
-    $messaggioASchermo = $messaggiSuccesso[$_GET['success']];
+$successKey = $_GET['success'] ?? '';
+$errorKey = $_GET['error'] ?? '';
+
+if ($successKey !== '' && isset($messaggiSuccesso[$successKey])) {
+    $messaggioASchermo = $messaggiSuccesso[$successKey];
     $tipoMessaggioASchermo = 'success';
-} elseif (isset($_GET['error']) && isset($messaggiErrore[$_GET['error']])) {
-    $messaggioASchermo = $messaggiErrore[$_GET['error']];
+} elseif ($errorKey !== '' && isset($messaggiErrore[$errorKey])) {
+    $messaggioASchermo = $messaggiErrore[$errorKey];
     $tipoMessaggioASchermo = 'error';
 }
 
@@ -198,6 +241,9 @@ require_once '../templates/header.php';
               ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm'
               : 'px-3 py-2 rounded border text-slate-700 text-sm hover:bg-slate-100';
           $link = url('public/customers/abbonamenti.php') . '?filtro=' . urlencode($chiave);
+          if ($ricerca !== '') {
+              $link .= '&q=' . urlencode($ricerca);
+          }
           ?>
           <a href="<?= htmlspecialchars($link) ?>" class="<?= $classi ?>">
             <?= htmlspecialchars($label) ?>
@@ -205,14 +251,24 @@ require_once '../templates/header.php';
         <?php endforeach; ?>
       </div>
 
-      <input
-        id="customerAbbonamentiSearch"
-        data-table-search="customerAbbonamentiTable"
-        data-no-results="customerAbbonamentiNoResults"
-        type="text"
-        class="border rounded px-3 py-2 mb-4 w-full md:w-1/3"
-        placeholder="Cerca abbonamento..."
-      >
+      <form method="get" class="mb-4 flex flex-wrap gap-2 items-center">
+        <input type="hidden" name="filtro" value="<?= htmlspecialchars($filtro) ?>">
+        <input
+          type="text"
+          name="q"
+          value="<?= htmlspecialchars($ricerca) ?>"
+          class="border rounded px-3 py-2 w-full md:w-1/3"
+          placeholder="Cerca abbonamento..."
+        >
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">
+          Cerca
+        </button>
+        <?php if ($ricerca !== ''): ?>
+          <a href="<?= htmlspecialchars(url('public/customers/abbonamenti.php') . '?filtro=' . urlencode($filtro)) ?>" class="inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+            Reset
+          </a>
+        <?php endif; ?>
+      </form>
 
       <div class="rounded-xl border border-slate-200 overflow-hidden">
         <table id="customerAbbonamentiTable" class="w-full text-sm text-center admin-table">
@@ -232,26 +288,24 @@ require_once '../templates/header.php';
               <td colspan="6">Nessun abbonamento trovato per il filtro selezionato.</td>
             </tr>
           <?php else: ?>
+            <?php $oggi = new DateTimeImmutable('today'); ?>
             <?php foreach ($abbonamentiFiltrati as $a):
-              $oggi = new DateTimeImmutable('today');
-              $fine = DateTimeImmutable::createFromFormat('Y-m-d', (string) $a['data_fine']);
-              if ($fine === false) {
-                  $fine = new DateTimeImmutable((string) $a['data_fine']);
-              }
+              $fine = $parseDate((string) ($a['data_fine'] ?? '')) ?? $oggi;
               $giorniAllaScadenza = (int) $oggi->diff($fine)->format('%r%a');
               $isScaduto = $fine < $oggi;
               $isAttivo = (int) $a['attivo'] === 1;
               $isEliminabile = !$isAttivo || $isScaduto;
               $frequenza = strtolower(trim((string) ($a['frequenza'] ?? 'mensile')));
-              if (!in_array($frequenza, ['mensile', 'annuale'], true)) {
-                  $frequenza = 'mensile';
-              }
+              $frequenza = in_array($frequenza, ['mensile', 'annuale'], true) ? $frequenza : 'mensile';
               $suffissoSpesa = $frequenza === 'annuale' ? 'anno' : 'mese';
+              $servizioLabel = trim((string) ($a['servizio'] ?? '')) ?: 'Servizio non disponibile';
+              $categoriaLabel = trim((string) ($a['categoria'] ?? '')) ?: 'Senza categoria';
+              $costo = (float) ($a['costo'] ?? 0);
             ?>
               <?php $classeRiga = (!$isAttivo || $isScaduto) ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50'; ?>
               <tr class="<?= $classeRiga ?>">
-                <td><?= htmlspecialchars($a['servizio']) ?></td>
-                <td><?= htmlspecialchars($a['categoria'] ?? 'Senza categoria') ?></td>
+                <td><?= htmlspecialchars($servizioLabel) ?></td>
+                <td><?= htmlspecialchars($categoriaLabel) ?></td>
 
                 <td>
                   <?php if (!$isAttivo): ?>
@@ -267,7 +321,7 @@ require_once '../templates/header.php';
 
                 <td><?= htmlspecialchars($a['data_fine']) ?></td>
                 <td>
-                  &euro;<?= number_format((float) ($a['costo'] ?? 0), 2, ',', '.') ?>
+                  &euro;<?= number_format($costo, 2, ',', '.') ?>
                   <span class="text-xs text-slate-500">/ <?= htmlspecialchars($suffissoSpesa) ?></span>
                 </td>
                 <td class="actions">
@@ -286,9 +340,6 @@ require_once '../templates/header.php';
                 </td>
               </tr>
             <?php endforeach; ?>
-            <tr id="customerAbbonamentiNoResults" class="hidden hover:bg-slate-50" data-static-row="true">
-              <td colspan="6">Nessun risultato per la ricerca.</td>
-            </tr>
           <?php endif; ?>
         </tbody>
         </table>
