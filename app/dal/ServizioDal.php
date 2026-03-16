@@ -48,8 +48,8 @@ class ServizioDAL
         FROM servizi s
         LEFT JOIN abbonamenti a ON a.servizio_id = s.id
         GROUP BY s.id, s.nome, s.categoria, s.costo
-        HAVING ultimo_rinnovo IS NULL OR ultimo_rinnovo < DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-        ORDER BY ultimo_rinnovo IS NULL DESC, ultimo_rinnovo ASC, s.nome ASC");
+        HAVING MAX(a.data_fine) IS NULL OR MAX(a.data_fine) < DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        ORDER BY MAX(a.data_fine) IS NULL DESC, MAX(a.data_fine) ASC, s.nome ASC");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
