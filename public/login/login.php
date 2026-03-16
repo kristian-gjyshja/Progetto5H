@@ -3,12 +3,12 @@ require_once __DIR__ . '/../../app/config.php';
 
 if (isset($_SESSION['ruolo'], $_SESSION['email'])) {
     if ($_SESSION['ruolo'] === 'admin') {
-        header('Location: public/admin/index.php');
+        header('Location: ' . url('public/admin/index.php'));
         exit();
     }
 
     if ($_SESSION['ruolo'] === 'user') {
-        header('Location: public/customers/index.php');
+        header('Location: ' . url('public/customers/index.php'));
         exit();
     }
 }
@@ -28,7 +28,8 @@ $errorMessage = $errorMessages[$errorKey] ?? null;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - SubManager Pro</title>
-  <link rel="stylesheet" href="assets/css/login.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/tailwind-lite.css')) ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset('css/login.css')) ?>">
 </head>
 <body class="login-body flex min-h-screen items-center justify-center">
   <div class="w-96 overflow-hidden rounded-2xl shadow-2xl">
@@ -51,7 +52,7 @@ $errorMessage = $errorMessages[$errorKey] ?? null;
         </div>
       <?php endif; ?>
 
-      <form method="post" action="public/login/login_action.php')) ?>" class="space-y-6">
+      <form method="post" action="<?= htmlspecialchars(url('public/login/login_action.php')) ?>" class="space-y-6">
         <div class="relative">
           <label for="email" class="mb-1 block text-sm font-semibold text-slate-700">Email</label>
           <span class="pointer-events-none absolute inset-y-0 left-0 top-6 flex items-center pl-3 text-purple-500">
@@ -95,7 +96,7 @@ $errorMessage = $errorMessages[$errorKey] ?? null;
         </button>
 
         <a
-          href="public/index.php')) ?>"
+          href="<?= htmlspecialchars(url('public/index.php')) ?>"
           class="block w-full rounded-xl border border-purple-300 py-3 text-center text-sm font-semibold text-purple-700 transition hover:bg-purple-50"
         >
           Torna alla pagina introduttiva

@@ -27,7 +27,7 @@ if ($ricerca !== '') {
 
 $redirectConFiltro = function (array $params = []) use ($queryBase): void {
     $query = http_build_query(array_merge($queryBase, $params));
-    header('Location: public/admin/abbonamento.php' . '?' . $query);
+    header('Location: ' . url('public/admin/abbonamento.php') . '?' . $query);
     exit();
 };
 

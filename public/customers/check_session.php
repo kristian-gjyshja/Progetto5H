@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../app/dal/db.php';
 $allowed_roles = ['admin', 'user'];
 
 if (!isset($_SESSION['id'], $_SESSION['email'], $_SESSION['ruolo'])) {
-    header('Location: public/login/login.php?error=sessione_scaduta');
+    header('Location: ' . url('public/login/login.php') . '?error=sessione_scaduta');
     exit();
 }
 

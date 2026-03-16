@@ -13,7 +13,7 @@ if ($ricerca !== '') {
 $redirect = function (array $params = []) use ($queryBase): void {
     $query = http_build_query(array_merge($queryBase, $params));
     $query = $query !== '' ? ('?' . $query) : '';
-    header('Location: public/admin/configurazioni.php?' . $query);
+    header('Location: ' . url('public/admin/configurazioni.php') . '?' . $query);
     exit();
 };
 
