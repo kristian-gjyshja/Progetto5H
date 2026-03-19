@@ -8,7 +8,11 @@
 </FilesMatch>
 RedirectMatch 404 /\.git
 
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
+RRewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ public/$1.php [L,QSA]
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [NC,L]
+
+
+
+
