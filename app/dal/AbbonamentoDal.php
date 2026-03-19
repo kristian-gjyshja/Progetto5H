@@ -20,19 +20,10 @@ class AbbonamentoDal
 
         $this->colonnaFrequenzaRisolta = true;
 
-        try {
-            $stmt = $this->pdo->query("SHOW COLUMNS FROM servizi");
-            $colonne = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
-        } catch (PDOException $e) {
-            $this->colonnaFrequenzaServizio = null;
-            return null;
-        }
-
-        foreach (['frequenza_rinnovo', 'frequenza'] as $colonna) {
-            if (in_array($colonna, $colonne, true)) {
-                $this->colonnaFrequenzaServizio = $colonna;
-                return $colonna;
-            }
+        $colonne = $this->getColonneAbbonamenti();
+        if (in_array('frequenza', $colonne, true)) {
+            $this->colonnaFrequenzaServizio = 'frequenza';
+            return $this->colonnaFrequenzaServizio;
         }
 
         $this->colonnaFrequenzaServizio = null;
@@ -166,7 +157,7 @@ class AbbonamentoDal
         WHERE a.attivo = 1
         AND a.archiviato = 0
         AND a.data_fine BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'
+        AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'annuale'
         ORDER BY a.data_fine ASC, a.id DESC";
 
         $stmt = $this->pdo->query($sql);
@@ -215,7 +206,7 @@ class AbbonamentoDal
         AND a.archiviato = 0
         AND a.attivo = 1
         AND a.data_fine BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'
+        AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'annuale'
         ORDER BY a.data_fine ASC";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':utente_id', $utenteId, PDO::PARAM_INT);
@@ -252,7 +243,7 @@ class AbbonamentoDal
         JOIN servizi s ON a.servizio_id = s.id
         WHERE a.attivo = 1
         AND a.archiviato = 0
-        AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'mensile'");
+        AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'mensile'");
         return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
     }
 
@@ -270,11 +261,11 @@ class AbbonamentoDal
             AND a.archiviato = 0";
 
         $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
-            AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'mensile'");
+            AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'mensile'");
         $totMensile = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
 
         $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
-            AND LOWER(TRIM(COALESCE(s.$colonnaFrequenza, ''))) = 'annuale'");
+            AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'annuale'");
         $totAnnuale = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
 
         return ($totMensile * 12) + $totAnnuale;
