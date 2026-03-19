@@ -232,43 +232,17 @@ class AbbonamentoDal
 
     public function spesaMensile()
     {
-        $colonnaFrequenza = $this->getColonnaFrequenzaServizio();
-        if ($colonnaFrequenza === null) {
-            $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale FROM abbonamenti a JOIN servizi s ON a.servizio_id = s.id WHERE a.attivo = 1 AND a.archiviato = 0");
-            return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
-        }
-
         $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale
         FROM abbonamenti a
         JOIN servizi s ON a.servizio_id = s.id
         WHERE a.attivo = 1
-        AND a.archiviato = 0
-        AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'mensile'");
-        return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
+        AND a.archiviato = 0");
+        return (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
     }
 
     public function spesaAnnuale()
     {
-        $colonnaFrequenza = $this->getColonnaFrequenzaServizio();
-        if ($colonnaFrequenza === null) {
-            $stmt = $this->pdo->query("SELECT SUM(s.costo) * 12 AS totale FROM abbonamenti a JOIN servizi s ON a.servizio_id = s.id WHERE a.attivo = 1 AND a.archiviato = 0");
-            return $stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0;
-        }
-
-        $sqlBase = "FROM abbonamenti a
-            JOIN servizi s ON a.servizio_id = s.id
-            WHERE a.attivo = 1
-            AND a.archiviato = 0";
-
-        $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
-            AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'mensile'");
-        $totMensile = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
-
-        $stmt = $this->pdo->query("SELECT SUM(s.costo) AS totale $sqlBase
-            AND LOWER(TRIM(COALESCE(a.$colonnaFrequenza, ''))) = 'annuale'");
-        $totAnnuale = (float) ($stmt->fetch(PDO::FETCH_ASSOC)['totale'] ?? 0);
-
-        return ($totMensile * 12) + $totAnnuale;
+        return $this->spesaMensile() * 12;
     }
 
     public function spesaTotaleRicorrente()
